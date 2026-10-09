@@ -1,0 +1,1934 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AMG OPERA - Photo Edit</title>
+    <link rel="stylesheet" href="assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="assets/css/flatpickr.min.css">
+    <link rel="stylesheet" href="assets/css/cropper.min.css">
+
+    <style>
+        /* Photo demo (006PhotoEditOut): page-specific rules only */
+
+        /* Photo tile */
+        .photo-media {
+            position: relative;
+            aspect-ratio: 4 / 3;
+            overflow: hidden;
+            background-color: #f1f3f5;
+        }
+
+        .photo-view {
+            display: block;
+            cursor: pointer;
+        }
+
+        .photo-frame {
+            display: block;
+            position: relative;
+            width: 100%;
+            aspect-ratio: 4 / 3;
+            overflow: hidden;
+            background-color: #f1f3f5;
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: contain;
+            transition: transform 0.25s ease;
+        }
+
+        .photo-frame.is-cropped {
+            background-color: #fff;
+        }
+
+        .photo-frame .photo-img {
+            display: block;
+            position: absolute;
+            inset: 0;
+            margin: auto;
+            max-width: 100%;
+            max-height: 100%;
+            width: auto;
+            height: auto;
+        }
+
+        /* Turned (90/270) photos: narrower, taller box so the whole photo
+           stays visible once rotated (pillarboxed in the 4:3 frame).
+           object-fit keeps raw images (any aspect) undistorted in the box. */
+        .photo-frame .photo-img.is-turned {
+            width: 75%;
+            height: 133.3333%;
+            max-height: none;
+            object-fit: contain;
+        }
+
+        /* Turned crop: centred 3:4 box showing the whole cropped region. */
+        .photo-cropview {
+            display: block;
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            width: 56.25%;
+            height: 100%;
+            margin: auto;
+            background-repeat: no-repeat;
+        }
+
+        .photo-select {
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            z-index: 2;
+            width: 14px;
+            height: 14px;
+            margin: 0;
+            cursor: pointer;
+            accent-color: #0d6efd;
+        }
+
+        .rot-badge {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            z-index: 2;
+            font-size: 0.6rem;
+        }
+
+        .crop-badge {
+            position: absolute;
+            bottom: 4px;
+            left: 4px;
+            z-index: 2;
+            font-size: 0.6rem;
+        }
+
+        /* Toolbar links (Select All / Deselect All / rotate icons) */
+        .toolbar-link {
+            color: #0e2e47;
+            text-decoration: none;
+        }
+
+        .toolbar-link:hover {
+            text-decoration: underline;
+        }
+
+        .toolbar-link.is-disabled {
+            opacity: 0.4;
+            pointer-events: none;
+        }
+
+        .toolbar-link .bi {
+            font-size: 1.2rem;
+        }
+
+        /* Per-photo icon links under each tile */
+        .photo-tools {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding-top: 2px;
+        }
+
+        .photo-tools a {
+            color: #6c757d;
+            font-size: 0.85rem;
+            text-decoration: none;
+        }
+
+        .photo-tools a:hover {
+            color: #0d6efd;
+        }
+
+        .photo-tools a.act-delete:hover {
+            color: #dc3545;
+        }
+
+        /* Crop modal stage: Cropper.js needs a sized container */
+        #cropStage {
+            position: relative;
+            width: 100%;
+            height: 55vh;
+            max-height: 520px;
+            background: #f8f9fa;
+            border-radius: 0.25rem;
+            overflow: hidden;
+        }
+
+        /* Summary modal previews: fixed 4:3 slot, same behaviour as tiles */
+        .summary-view {
+            display: block;
+            position: relative;
+            width: 72px;
+            height: 54px;
+            flex: 0 0 72px;
+            overflow: hidden;
+            background-color: #f1f3f5;
+            border: 1px solid #dee2e6;
+            border-radius: 0.25rem;
+        }
+        .summary-frame {
+            width: 100%;
+        }
+    </style>
+
+    <script src="assets/js/flatpickr.js" defer></script>
+    <script src="assets/js/cropper.min.js" defer></script>
+</head>
+
+<body>
+
+    <div class="container-fluid banner">
+
+        <a href="002MainMenu.aspx" id="banner_logo" class="">
+            <img src="assets/img/AMG.png" alt="AMG" id="banner_logo" title="Return to Main Menu">
+        </a>
+
+        <div id="banner_assetmanagementgroup">Asset Management Group</div>
+
+        <div id="banner_caseref_address">
+            AMGM/[Case ID] - <strong> [Address] </strong>
+        </div>
+
+    </div>
+
+    <div id="navlinks">
+        <a href="99Comms.aspx" target="_blank">Comms</a>
+        <a href="FaxOut.aspx" target="_blank">Direct Comms</a>
+        <a href="010TalkSheetOut.aspx" target="_blank">Talk Sheet</a>
+        <a href="006JobAudit.aspx" target="_blank">Audit</a>
+        <a href="029InvoiceSummary.aspx" target="_blank">Invoice History</a>
+    </div>
+
+    <div class="container-fluid">
+
+        <div class="row">
+
+            <div class="col-lg-4"> <!--Property Details-->
+
+                <form action="propdetailsin.aspx" method="post">
+
+                    <div class="card shadow">
+
+                        <div class="card-header text-center">
+                            Property Details - AMGM/[Case ID]
+                        </div>
+
+                        <div class="card-body">
+
+                            <div class="row g-3 mb-2">
+
+                                <div class="col-12 col-sm-4">
+                                    <a href="002MainMenu.aspx" class="btn btn-sm btn-primary back-icon col-12">
+                                        Back to Menu
+                                    </a>
+                                </div>
+
+                                <div class="col-12 col-sm-4">
+                                    <a href="050DeleteThings.aspx" class="btn btn-sm btn-danger delete-icon col-12">
+                                        Delete Things
+                                    </a>
+                                </div>
+
+                                <div class="col-12 col-sm-4">
+                                    <a href="006AddJobPageOut.aspx" class="btn btn-sm btn-success add-icon col-12">
+                                        Add New Job
+                                    </a>
+                                </div>
+
+                            </div>
+
+                            <div class="row gy-1">
+
+                                <div class="col-md-12">
+
+                                    <div class="input-group">
+                                        <span class="input-group-text" style="width: 75px;">Client:</span>
+                                        <select name="vClient" id="vClient" class="form-select form-select-sm" required>
+                                            <option value="">-- Select --</option>
+                                        </select>
+                                    </div>
+
+                                </div>
+
+                                <div class="col-md-6">
+
+                                    <div class="input-group">
+                                        <span class="input-group-text" style="width: 75px;">Contact:</span>
+                                        <select name="vClientContact" id="vClientContact" class="form-select form-select-sm">
+                                            <option value="">-- Select --</option>
+                                            <option value="">Confirmations & Reports (All Clients)</option>
+                                        </select>
+                                    </div>
+
+                                </div>
+
+                                <div class="col-md-6">
+
+                                    <div class="input-group">
+                                        <span class="input-group-text" style="width: 75px;">Tel:</span>
+                                        <a href="tel:" class="form-control form-control-sm">
+                                            [Tel]
+                                        </a>
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                            <hr>
+
+                            <div class="row gy-2">
+
+                                <div class="col-md-12">
+
+                                    <div class="input-group">
+                                        <span class="input-group-text" style="width: 95px;">Asset Manager:</span>
+                                        <select name="vInsSource" id="vInsSource" class="form-select form-select-sm">
+                                            <option value="">-- Select --</option>
+                                        </select>
+                                    </div>
+
+                                </div>
+
+                                <div class="col-md-6">
+
+                                    <div class="input-group">
+                                        <span class="input-group-text" style="width: 95px;">Contact:</span>
+                                        <select name="vInsSourceContact" id="vInsSourceContact" class="form-select form-select-sm">
+                                            <option value="">-- Select --</option>
+                                            <option value="">Confirmations & Reports (All Clients)</option>
+                                        </select>
+                                    </div>
+
+                                </div>
+
+                                <div class="col-md-6">
+
+                                    <div class="input-group">
+                                        <span class="input-group-text" style="width: 115px;">Asset Manager Ref:</span>
+                                        <input name="vTessaRef" id="vTessaRef" type="text" class="form-control form-control-sm fw-bold" value="">
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                            <hr>
+
+                            <div class="row gy-1">
+
+                                <div class="col-md-12">
+
+                                    <div class="input-group">
+                                        <span class="input-group-text" style="width: 75px;">Solictor:</span>
+                                        <select name="vSolicitor" id="vSolicitor" class="form-select form-select-sm">
+                                            <option value="">-- Select --</option>
+                                            <option value="">Confirmations & Reports (All Clients)</option>
+                                        </select>
+                                    </div>
+
+                                </div>
+
+                                <div class="col-md-6">
+
+                                    <div class="input-group">
+                                        <span class="input-group-text" style="width: 75px;">Contact:</span>
+                                        <select name="" id="" class="form-select form-select-sm">
+                                            <option value="">-- Select --</option>
+
+                                        </select>
+                                    </div>
+
+                                </div>
+
+                                <div class="col-md-6">
+
+                                    <div class="input-group">
+                                        <span class="input-group-text" style="width: 75px;">Tel:</span>
+                                        <a href="tel:" class="form-control form-control-sm">
+                                            [Tel]
+                                        </a>
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                            <hr>
+
+                            <div class="row gy-1">
+
+                                <div class="col-md-12">
+
+                                    <div class="input-group">
+                                        <span class="input-group-text" style="width: 75px;">Address:</span>
+                                        <input name="vAddress1" id="vAddress1" type="text" class="form-control form-control-sm" value="">
+
+                                        <a href="http://maps.google.co.uk/maps?" class="btn btn-xs border fs-12" target="_blank">
+                                            Map
+                                            <i class="bi bi-geo-alt-fill"></i>
+                                        </a>
+
+                                    </div>
+
+                                </div>
+
+                                <div class="col-md-6">
+
+                                    <div class="input-group">
+                                        <input name="vAddress2" id="vAddress2" type="text" class="form-control form-control-sm" value="">
+                                    </div>
+
+                                </div>
+
+                                <div class="col-md-6">
+
+                                    <div class="input-group">
+                                        <input name="vAddress3" id="vAddress3" type="text" class="form-control form-control-sm" value="">
+                                    </div>
+
+                                </div>
+
+                                <div class="col-md-6">
+
+                                    <div class="input-group">
+                                        <span class="input-group-text" style="width: 75px;">Town:</span>
+                                        <input name="vAddress4" id="vAddress4" type="text" class="form-control form-control-sm" value="">
+                                    </div>
+
+                                </div>
+
+                                <div class="col-md-6">
+
+                                    <div class="input-group">
+                                        <span class="input-group-text" style="width: 75px;">County:</span>
+                                        <input name="vAddress5" id="vAddress5" type="text" class="form-control form-control-sm" value="">
+                                    </div>
+
+                                </div>
+
+                                <div class="col-md-6">
+
+                                    <div class="input-group">
+                                        <span class="input-group-text" style="width: 75px;">Postcode:</span>
+                                        <input name="vAddress6" id="vAddress6" type="text" class="form-control form-control-sm" value="">
+                                    </div>
+
+                                </div>
+
+                                <div class="col-md-6 mt-2">
+                                    <a href="" class="btn btn-sm btn-primary search-icon fs-10 col-12">
+                                        POSTCODE LOOKUP
+                                    </a>
+                                </div>
+
+                                <div class="col-md-6">
+
+                                    <div class="input-group">
+                                        <span class="input-group-text" style="width: 75px;">High Risk:</span>
+                                        <input type="checkbox" name="vHighRisk" id="vHighRisk" value="" class="ms-2">
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                            <hr>
+
+                            <div class="row gy-1">
+
+                                <div class="col-md-6">
+
+                                    <div class="input-group">
+                                        <span class="input-group-text" style="width: 85px;">Source Ref:</span>
+                                        <input name="vClientRef" id="vClientRef" type="text" class="form-control form-control-sm" value="">
+                                    </div>
+
+                                </div>
+
+                                <div class="col-md-6">
+
+                                    <div class="input-group">
+                                        <span class="input-group-text" style="width: 85px;">Account No.:</span>
+                                        <input name="vAccountRef" id="vAccountRef" type="text" class="form-control form-control-sm" value="">
+                                    </div>
+
+                                </div>
+
+                                <div class="col-md-6">
+
+                                    <div class="input-group mb-1">
+                                        <span class="input-group-text" style="width: 85px;">Customer 1:</span>
+                                        <input name="vBorrower1" id="vBorrower1" type="text" class="form-control form-control-sm" value="">
+                                    </div>
+
+                                </div>
+
+                                <div class="col-md-6">
+
+                                    <div class="input-group mb-1">
+                                        <span class="input-group-text" style="width: 85px;">Customer 2:</span>
+                                        <input name="vBorrower2" id="vBorrower2" type="text" class="form-control form-control-sm" value="">
+                                    </div>
+
+                                </div>
+
+                                <div class="col-md-12">
+
+                                    <div class="input-group">
+                                        <span class="input-group-text">Important Information:</span>
+                                        <textarea name="vImportantInfo" id="vImportantInfo" class="form-control form-control-sm"></textarea>
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                            <hr class="m-2">
+
+                            <div class="row">
+
+                                <div class="col-12">
+                                    <button class="btn btn-success submit-icon col-12">SUBMIT</button>
+                                </div>
+
+                            </div>
+
+                            <div class="row mt-2">
+
+                                <div class="col-md-12">
+
+                                    <div class="input-group mb-3">
+                                        <a href="" class="input-group-text">Keyholder:</a>
+                                        <input type="text" class="form-control form-control-sm" value="[Keybolding EA] - Tel: [Keyholder Tel] , Postcode: [Keyholder Postcode]" readonly>
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                        </div> <!--Card Body-->
+                    </div>
+
+                </form>
+
+            </div> <!--Property Details-->
+
+
+            <div class="col-lg-8">
+
+                <form name="vJobDetails" method="post" action="006PhotoEditIn.aspx">
+
+                    <div class="card shadow mb-3">
+                        <div class="card-header d-flex justify-content-between">
+                            <span> 278713/1E </span>
+                            <span> In Possession (03/07/2026 11:09:43) </span>
+                        </div>
+                        <div class="card-body">
+
+                            <div class="row mb-2">
+
+                                <div class="col-md-5">
+
+                                    <div class="input-group mb-3">
+                                        <span class="input-group-text" style="width: 100px;">Job Type:</span>
+                                        <select name="vJobType" id="vJobType" class="form-select form-select-sm" required="">
+                                            <option value="">-- Select --</option>
+                                        </select>
+                                    </div>
+
+                                </div>
+
+                                <div class="col-md-5">
+
+                                    <div class="input-group mb-3">
+                                        <span class="input-group-text">Photo List Checked</span>
+                                        <input type="checkbox" name="vPhotosChecked" id="vPhotosChecked" value="01/01/2000" class="ms-3">
+                                        <span class="my-auto ms-3">01/01/2000 - ADM</span>
+                                    </div>
+
+                                </div>
+
+                                <div class="col-md-2">
+                                    <a href="006EditStandardJobOut.aspx?vID=" class="btn btn-sm btn-primary back-icon w-100">
+                                        BACK
+                                    </a>
+                                </div>
+
+                            </div>
+
+                            <!--
+                            <div class="row">
+
+                                <div class="col-md-6">
+
+                                    <p class="section-banner p-2">Add Lock</p>
+
+                                    <div class="table-responsive">
+
+                                        <table class="table table-sm table-borderless">
+                                            <thead>
+                                                <tr>
+                                                    <th>
+                                                        Type
+                                                    </th>
+                                                    <th>
+                                                        Description (if other)
+                                                    </th>
+                                                    <th>
+                                                        Location
+                                                    </th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td>
+                                                        <select name="vType1" class="form-select form-select-sm w-auto">
+                                                            <option value=" "> </option>
+
+                                                            <option value="1">Rim Cylinder</option>
+
+                                                            <option value="2">Europrofile Cylinder</option>
+
+                                                            <option value="3">Oval Cylinder</option>
+
+                                                            <option value="4">BS Cylinder</option>
+
+                                                            <option value="5">Nightlatch Set</option>
+
+                                                            <option value="6">3 Lever Deadlock</option>
+
+                                                            <option value="7">3 Lever Sashlock</option>
+
+                                                            <option value="8">5 Lever Deadlock</option>
+
+                                                            <option value="9">5 Lever Sashlock</option>
+
+                                                            <option value="10">BS 5 Lever Deadlock</option>
+
+                                                            <option value="11">BS 5 Lever Sashlock</option>
+
+                                                            <option value="12">Rebated Sashlock</option>
+
+                                                            <option value="13">Patio Door Lock</option>
+
+                                                            <option value="14">Window Lock</option>
+
+                                                            <option value="15">Padbolt &amp; Padlock</option>
+
+                                                            <option value="16">Hasp, Staple &amp; Padlock</option>
+
+                                                            <option value="17">Padlock</option>
+
+                                                            <option value="18">Garage Door Lock</option>
+
+                                                            <option value="19">Garage Locking Handle</option>
+
+                                                            <option value="20">Rim Mortice Lock</option>
+
+                                                            <option value="21">Sash Jammer</option>
+
+                                                            <option value="22">Other</option>
+
+
+                                                        </select>
+                                                    </td>
+                                                    <td>
+                                                        <input type="text" name="vDesc1" class="form-control form-control-sm" size="30" maxlength="255">
+                                                    </td>
+                                                    <td>
+                                                        <select name="vLocation1" class="form-select form-select-sm w-auto">
+                                                            <option value=" "> </option>
+
+                                                            <option value="1">Front Door</option>
+
+                                                            <option value="2">Front Porch Door</option>
+
+                                                            <option value="3">Rear Door</option>
+
+                                                            <option value="4">Rear Porch Door</option>
+
+                                                            <option value="5">Side Door</option>
+
+                                                            <option value="6">Side Porch Door</option>
+
+                                                            <option value="7">Patio Door</option>
+
+                                                            <option value="8">Conservatory Door</option>
+
+                                                            <option value="9">Cellar Door</option>
+
+                                                            <option value="10">Balcony Door</option>
+
+                                                            <option value="11">Window</option>
+
+                                                            <option value="12">Lofthatch</option>
+
+                                                            <option value="13">Skylight</option>
+
+                                                            <option value="14">Garage Door</option>
+
+                                                            <option value="15">Garage Rear Door</option>
+
+                                                            <option value="16">Garage Side Door</option>
+
+                                                            <option value="17">Meter Cupboard</option>
+
+                                                            <option value="18">Storage Cupboard</option>
+
+                                                            <option value="19">Shed Door</option>
+
+                                                            <option value="20">Outbuilding Door</option>
+
+                                                            <option value="21">Front Gate</option>
+
+                                                            <option value="22">Side Gate</option>
+
+                                                            <option value="23">Rear Gate</option>
+
+                                                            <option value="24">Other</option>
+
+                                                        </select>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>
+                                                        <select name="vType2" class="form-select form-select-sm w-auto">
+                                                            <option value=" "> </option>
+
+                                                            <option value="1">Rim Cylinder</option>
+
+                                                            <option value="2">Europrofile Cylinder</option>
+
+                                                            <option value="3">Oval Cylinder</option>
+
+                                                            <option value="4">BS Cylinder</option>
+
+                                                            <option value="5">Nightlatch Set</option>
+
+                                                            <option value="6">3 Lever Deadlock</option>
+
+                                                            <option value="7">3 Lever Sashlock</option>
+
+                                                            <option value="8">5 Lever Deadlock</option>
+
+                                                            <option value="9">5 Lever Sashlock</option>
+
+                                                            <option value="10">BS 5 Lever Deadlock</option>
+
+                                                            <option value="11">BS 5 Lever Sashlock</option>
+
+                                                            <option value="12">Rebated Sashlock</option>
+
+                                                            <option value="13">Patio Door Lock</option>
+
+                                                            <option value="14">Window Lock</option>
+
+                                                            <option value="15">Padbolt &amp; Padlock</option>
+
+                                                            <option value="16">Hasp, Staple &amp; Padlock</option>
+
+                                                            <option value="17">Padlock</option>
+
+                                                            <option value="18">Garage Door Lock</option>
+
+                                                            <option value="19">Garage Locking Handle</option>
+
+                                                            <option value="20">Rim Mortice Lock</option>
+
+                                                            <option value="21">Sash Jammer</option>
+
+                                                            <option value="22">Other</option>
+
+
+                                                        </select>
+                                                    </td>
+                                                    <td>
+                                                        <input type="text" name="vDesc2" class="form-control form-control-sm" size="30" maxlength="255">
+                                                    </td>
+                                                    <td>
+                                                        <select name="vLocation2" class="form-select form-select-sm w-auto">
+                                                            <option value=" "> </option>
+
+                                                            <option value="1">Front Door</option>
+
+                                                            <option value="2">Front Porch Door</option>
+
+                                                            <option value="3">Rear Door</option>
+
+                                                            <option value="4">Rear Porch Door</option>
+
+                                                            <option value="5">Side Door</option>
+
+                                                            <option value="6">Side Porch Door</option>
+
+                                                            <option value="7">Patio Door</option>
+
+                                                            <option value="8">Conservatory Door</option>
+
+                                                            <option value="9">Cellar Door</option>
+
+                                                            <option value="10">Balcony Door</option>
+
+                                                            <option value="11">Window</option>
+
+                                                            <option value="12">Lofthatch</option>
+
+                                                            <option value="13">Skylight</option>
+
+                                                            <option value="14">Garage Door</option>
+
+                                                            <option value="15">Garage Rear Door</option>
+
+                                                            <option value="16">Garage Side Door</option>
+
+                                                            <option value="17">Meter Cupboard</option>
+
+                                                            <option value="18">Storage Cupboard</option>
+
+                                                            <option value="19">Shed Door</option>
+
+                                                            <option value="20">Outbuilding Door</option>
+
+                                                            <option value="21">Front Gate</option>
+
+                                                            <option value="22">Side Gate</option>
+
+                                                            <option value="23">Rear Gate</option>
+
+                                                            <option value="24">Other</option>
+
+                                                        </select>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>
+                                                        <select name="vType3" class="form-select form-select-sm w-auto">
+                                                            <option value=" "> </option>
+
+                                                            <option value="1">Rim Cylinder</option>
+
+                                                            <option value="2">Europrofile Cylinder</option>
+
+                                                            <option value="3">Oval Cylinder</option>
+
+                                                            <option value="4">BS Cylinder</option>
+
+                                                            <option value="5">Nightlatch Set</option>
+
+                                                            <option value="6">3 Lever Deadlock</option>
+
+                                                            <option value="7">3 Lever Sashlock</option>
+
+                                                            <option value="8">5 Lever Deadlock</option>
+
+                                                            <option value="9">5 Lever Sashlock</option>
+
+                                                            <option value="10">BS 5 Lever Deadlock</option>
+
+                                                            <option value="11">BS 5 Lever Sashlock</option>
+
+                                                            <option value="12">Rebated Sashlock</option>
+
+                                                            <option value="13">Patio Door Lock</option>
+
+                                                            <option value="14">Window Lock</option>
+
+                                                            <option value="15">Padbolt &amp; Padlock</option>
+
+                                                            <option value="16">Hasp, Staple &amp; Padlock</option>
+
+                                                            <option value="17">Padlock</option>
+
+                                                            <option value="18">Garage Door Lock</option>
+
+                                                            <option value="19">Garage Locking Handle</option>
+
+                                                            <option value="20">Rim Mortice Lock</option>
+
+                                                            <option value="21">Sash Jammer</option>
+
+                                                            <option value="22">Other</option>
+
+
+                                                        </select>
+                                                    </td>
+                                                    <td>
+                                                        <input type="text" name="vDesc3" class="form-control form-control-sm" size="30" maxlength="255">
+                                                    </td>
+                                                    <td>
+                                                        <select name="vLocation3" class="form-select form-select-sm w-auto">
+                                                            <option value=" "> </option>
+
+                                                            <option value="1">Front Door</option>
+
+                                                            <option value="2">Front Porch Door</option>
+
+                                                            <option value="3">Rear Door</option>
+
+                                                            <option value="4">Rear Porch Door</option>
+
+                                                            <option value="5">Side Door</option>
+
+                                                            <option value="6">Side Porch Door</option>
+
+                                                            <option value="7">Patio Door</option>
+
+                                                            <option value="8">Conservatory Door</option>
+
+                                                            <option value="9">Cellar Door</option>
+
+                                                            <option value="10">Balcony Door</option>
+
+                                                            <option value="11">Window</option>
+
+                                                            <option value="12">Lofthatch</option>
+
+                                                            <option value="13">Skylight</option>
+
+                                                            <option value="14">Garage Door</option>
+
+                                                            <option value="15">Garage Rear Door</option>
+
+                                                            <option value="16">Garage Side Door</option>
+
+                                                            <option value="17">Meter Cupboard</option>
+
+                                                            <option value="18">Storage Cupboard</option>
+
+                                                            <option value="19">Shed Door</option>
+
+                                                            <option value="20">Outbuilding Door</option>
+
+                                                            <option value="21">Front Gate</option>
+
+                                                            <option value="22">Side Gate</option>
+
+                                                            <option value="23">Rear Gate</option>
+
+                                                            <option value="24">Other</option>
+
+                                                        </select>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>
+                                                        <select name="vType4" class="form-select form-select-sm w-auto">
+                                                            <option value=" "> </option>
+
+                                                            <option value="1">Rim Cylinder</option>
+
+                                                            <option value="2">Europrofile Cylinder</option>
+
+                                                            <option value="3">Oval Cylinder</option>
+
+                                                            <option value="4">BS Cylinder</option>
+
+                                                            <option value="5">Nightlatch Set</option>
+
+                                                            <option value="6">3 Lever Deadlock</option>
+
+                                                            <option value="7">3 Lever Sashlock</option>
+
+                                                            <option value="8">5 Lever Deadlock</option>
+
+                                                            <option value="9">5 Lever Sashlock</option>
+
+                                                            <option value="10">BS 5 Lever Deadlock</option>
+
+                                                            <option value="11">BS 5 Lever Sashlock</option>
+
+                                                            <option value="12">Rebated Sashlock</option>
+
+                                                            <option value="13">Patio Door Lock</option>
+
+                                                            <option value="14">Window Lock</option>
+
+                                                            <option value="15">Padbolt &amp; Padlock</option>
+
+                                                            <option value="16">Hasp, Staple &amp; Padlock</option>
+
+                                                            <option value="17">Padlock</option>
+
+                                                            <option value="18">Garage Door Lock</option>
+
+                                                            <option value="19">Garage Locking Handle</option>
+
+                                                            <option value="20">Rim Mortice Lock</option>
+
+                                                            <option value="21">Sash Jammer</option>
+
+                                                            <option value="22">Other</option>
+
+
+                                                        </select>
+                                                    </td>
+                                                    <td>
+                                                        <input type="text" name="vDesc4" class="form-control form-control-sm" size="30" maxlength="255">
+                                                    </td>
+                                                    <td>
+                                                        <select name="vLocation4" class="form-select form-select-sm w-auto">
+                                                            <option value=" "> </option>
+
+                                                            <option value="1">Front Door</option>
+
+                                                            <option value="2">Front Porch Door</option>
+
+                                                            <option value="3">Rear Door</option>
+
+                                                            <option value="4">Rear Porch Door</option>
+
+                                                            <option value="5">Side Door</option>
+
+                                                            <option value="6">Side Porch Door</option>
+
+                                                            <option value="7">Patio Door</option>
+
+                                                            <option value="8">Conservatory Door</option>
+
+                                                            <option value="9">Cellar Door</option>
+
+                                                            <option value="10">Balcony Door</option>
+
+                                                            <option value="11">Window</option>
+
+                                                            <option value="12">Lofthatch</option>
+
+                                                            <option value="13">Skylight</option>
+
+                                                            <option value="14">Garage Door</option>
+
+                                                            <option value="15">Garage Rear Door</option>
+
+                                                            <option value="16">Garage Side Door</option>
+
+                                                            <option value="17">Meter Cupboard</option>
+
+                                                            <option value="18">Storage Cupboard</option>
+
+                                                            <option value="19">Shed Door</option>
+
+                                                            <option value="20">Outbuilding Door</option>
+
+                                                            <option value="21">Front Gate</option>
+
+                                                            <option value="22">Side Gate</option>
+
+                                                            <option value="23">Rear Gate</option>
+
+                                                            <option value="24">Other</option>
+
+                                                        </select>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>
+                                                        <select name="vType5" class="form-select form-select-sm w-auto">
+                                                            <option value=" "> </option>
+
+                                                            <option value="1">Rim Cylinder</option>
+
+                                                            <option value="2">Europrofile Cylinder</option>
+
+                                                            <option value="3">Oval Cylinder</option>
+
+                                                            <option value="4">BS Cylinder</option>
+
+                                                            <option value="5">Nightlatch Set</option>
+
+                                                            <option value="6">3 Lever Deadlock</option>
+
+                                                            <option value="7">3 Lever Sashlock</option>
+
+                                                            <option value="8">5 Lever Deadlock</option>
+
+                                                            <option value="9">5 Lever Sashlock</option>
+
+                                                            <option value="10">BS 5 Lever Deadlock</option>
+
+                                                            <option value="11">BS 5 Lever Sashlock</option>
+
+                                                            <option value="12">Rebated Sashlock</option>
+
+                                                            <option value="13">Patio Door Lock</option>
+
+                                                            <option value="14">Window Lock</option>
+
+                                                            <option value="15">Padbolt &amp; Padlock</option>
+
+                                                            <option value="16">Hasp, Staple &amp; Padlock</option>
+
+                                                            <option value="17">Padlock</option>
+
+                                                            <option value="18">Garage Door Lock</option>
+
+                                                            <option value="19">Garage Locking Handle</option>
+
+                                                            <option value="20">Rim Mortice Lock</option>
+
+                                                            <option value="21">Sash Jammer</option>
+
+                                                            <option value="22">Other</option>
+
+
+                                                        </select>
+                                                    </td>
+                                                    <td>
+                                                        <input type="text" name="vDesc5" class="form-control form-control-sm" size="30" maxlength="255">
+                                                    </td>
+                                                    <td>
+                                                        <select name="vLocation5" class="form-select form-select-sm w-auto">
+                                                            <option value=" "> </option>
+
+                                                            <option value="1">Front Door</option>
+
+                                                            <option value="2">Front Porch Door</option>
+
+                                                            <option value="3">Rear Door</option>
+
+                                                            <option value="4">Rear Porch Door</option>
+
+                                                            <option value="5">Side Door</option>
+
+                                                            <option value="6">Side Porch Door</option>
+
+                                                            <option value="7">Patio Door</option>
+
+                                                            <option value="8">Conservatory Door</option>
+
+                                                            <option value="9">Cellar Door</option>
+
+                                                            <option value="10">Balcony Door</option>
+
+                                                            <option value="11">Window</option>
+
+                                                            <option value="12">Lofthatch</option>
+
+                                                            <option value="13">Skylight</option>
+
+                                                            <option value="14">Garage Door</option>
+
+                                                            <option value="15">Garage Rear Door</option>
+
+                                                            <option value="16">Garage Side Door</option>
+
+                                                            <option value="17">Meter Cupboard</option>
+
+                                                            <option value="18">Storage Cupboard</option>
+
+                                                            <option value="19">Shed Door</option>
+
+                                                            <option value="20">Outbuilding Door</option>
+
+                                                            <option value="21">Front Gate</option>
+
+                                                            <option value="22">Side Gate</option>
+
+                                                            <option value="23">Rear Gate</option>
+
+                                                            <option value="24">Other</option>
+
+                                                        </select>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+
+                                    </div>
+
+                                </div>
+
+
+                                <div class="col-md-6">
+
+                                    <p class="section-banner p-2 mt-3 mt-lg-0">Saved Lock List</p>
+
+                                    <div class="table-responsive">
+
+                                        <table class="table table-sm table-borderless table-striped">
+                                            <thead>
+                                                <tr>
+                                                    <th>
+                                                        Type
+                                                    </th>
+                                                    <th>
+                                                        Description
+                                                    </th>
+                                                    <th>
+                                                        Location
+                                                    </th>
+                                                    <th class="text-center">
+                                                        Remove
+                                                    </th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td>Rim Cylinder</td>
+                                                    <td>Emergency</td>
+                                                    <td>Front Door</td>
+                                                    <td class="text-center">
+                                                        <a href="006LockEditIn.aspx?vID=" class="btn btn-xs btn-danger delete-icon w-auto">
+                                                            REMOVE
+                                                        </a>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+
+                                    </div>
+
+                                    <hr class="mt-0">
+
+                                    <div class="row g-2">
+
+                                        <div class="col-lg-6">
+                                            <div class="input-group">
+                                                <span class="input-group-text" style="width: 120px;">No. of Keys to Agent:</span>
+                                                <input type="text" name="agentkeys" size="10" maxlength="10" class="form-control form-control-sm" value="">
+                                            </div>
+                                        </div>
+
+                                        <div class="col-lg-6">
+                                            <div class="input-group">
+                                                <span class="input-group-text" style="width: 120px;">Agent Name:</span>
+                                                <input type="text" name="agentname" size="20" maxlength="100" class="form-control form-control-sm" value="">
+                                            </div>
+                                        </div>
+
+                                        <div class="col-lg-6">
+                                            <div class="input-group">
+                                                <span class="input-group-text" style="width: 120px;">Selling Agent:</span>
+                                                <input type="text" name="sellingagent" size="20" maxlength="100" class="form-control form-control-sm" value="">
+                                            </div>
+                                        </div>
+
+                                        <div class="col-lg-6">
+                                            <div class="input-group">
+                                                <span class="input-group-text" style="width: 120px;">Delivered to Agents:</span>
+                                                <input type="text" value="" name="keysdelivered" size="9" maxlength="10" class="form-control form-control-sm datepicker" readonly>
+                                            </div>
+                                        </div>
+
+                                    </div>
+
+                                </div>
+
+                            </div> -->
+
+                        </div> <!--Card Body-->
+                    </div> <!--Job Details Card-->
+
+                    <!-- Photo demo, client-side only. Nothing is stored or sent:
+                         state lives in memory and a refresh restarts the demo.
+                         1. Edit Zone: rotate, crop, approve (photos not yet on the pack)
+                         2. Photo Sheet: approved photos for the report pack
+                         Uploads happen on the separate upload page (006PhotoUploadOut.aspx). -->
+                    <div class="row mt-3 mb-3">
+
+                        <!-- Edit Zone (staging) -->
+                        <div class="col-12">
+                            <div class="card shadow">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <span>Edit Zone</span>
+                                    <span class="badge bg-secondary" id="stagingBadge">0 photos</span>
+                                </div>
+                                <div class="card-body">
+
+                                    <!-- Upload link and toolbar share a row, but the
+                                         upload link sits outside the grey bar. -->
+                                    <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                                        <a class="btn btn-sm btn-primary add-icon"
+                                           href="006PhotoUploadOut.aspx">
+                                            Upload Photos
+                                        </a>
+
+                                        <!-- Edit toolbar: links for editing, a button only to approve -->
+                                        <div class="d-flex flex-wrap align-items-center gap-3 p-2 border rounded bg-light flex-grow-1">
+                                            <strong class="fs-12" id="stagingSelected">0 selected</strong>
+                                            <a href="#" class="fs-12 toolbar-link" id="selectAllStaging">Select All</a>
+                                            <a href="#" class="fs-12 toolbar-link" id="deselectAllStaging">Deselect All</a>
+                                            <span class="vr d-none d-sm-inline-block"></span>
+                                            <a href="#" class="toolbar-link" id="rotateLeft"
+                                               title="Rotate all ticked photos left" aria-label="Rotate left">
+                                                <i class="bi bi-arrow-counterclockwise"></i>
+                                            </a>
+                                            <a href="#" class="toolbar-link" id="rotateRight"
+                                               title="Rotate all ticked photos right" aria-label="Rotate right">
+                                                <i class="bi bi-arrow-clockwise"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-sm btn-success ms-auto" id="btnApprove"
+                                                    disabled title="Move ticked photos to the Photo Sheet">Approve selected &rarr;</button>
+                                        </div>
+                                    </div>
+
+                                    <div class="row row-cols-3 row-cols-sm-4 row-cols-md-5 row-cols-lg-6 g-2" id="stagingGrid"></div>
+                                    <p class="text-muted fs-12 mb-0" id="stagingEmpty">
+                                        No photos here yet. Add photos from the <strong>Upload Photos</strong> page.
+                                    </p>
+
+                                </div> <!--Card Body-->
+                            </div>
+                        </div>
+
+                        <!-- Photo Sheet (approved for the report) -->
+                        <div class="col-12 mt-3">
+                            <div class="card shadow">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <span>Photo Sheet <small class="text-muted fs-12">approved for the report</small></span>
+                                    <span class="badge bg-primary" id="sheetBadge">0 photos</span>
+                                </div>
+                                <div class="card-body">
+
+                                    <!-- Sheet toolbar: no editing here, photos go back to the Edit Zone for changes -->
+                                    <div class="d-flex flex-wrap align-items-center gap-3 p-2 border rounded bg-light mb-2">
+                                        <strong class="fs-12" id="sheetSelected">0 selected</strong>
+                                        <a href="#" class="fs-12 toolbar-link" id="selectAllSheet">Select All</a>
+                                        <a href="#" class="fs-12 toolbar-link" id="deselectSheet">Deselect All</a>
+                                        <button type="button" class="btn btn-sm btn-secondary ms-auto" id="btnReturn"
+                                                disabled title="Move ticked photos back to the Edit Zone">&larr; Return to edit</button>
+                                    </div>
+
+                                    <div class="row row-cols-3 row-cols-sm-4 row-cols-md-5 row-cols-lg-6 g-2" id="sheetGrid"></div>
+                                    <p class="text-muted fs-12 mb-0" id="sheetEmpty">
+                                        Nothing approved yet. Tick photos in the Edit Zone and choose
+                                        <strong>Approve selected</strong>.
+                                    </p>
+
+                                    <!-- Submit sits in the sheet, bottom right, same size as Return -->
+                                    <div class="d-flex justify-content-end mt-3">
+                                        <button type="submit" id="btnSubmitPhotos" class="btn btn-sm btn-success submit-icon">
+                                            SUBMIT
+                                        </button>
+                                    </div>
+
+                                </div> <!--Card Body-->
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Crop modal (free-form, Cropper.js) -->
+                    <div class="modal fade" id="cropModal" tabindex="-1" aria-labelledby="cropModalLabel" aria-hidden="true">
+                        <div class="modal-dialog modal-lg modal-dialog-centered">
+                            <div class="modal-content">
+                                <div class="modal-header py-2">
+                                    <h6 class="modal-title fs-13" id="cropModalLabel">
+                                        Crop photo <span id="cropPhotoName" class="text-muted"></span>
+                                    </h6>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div id="cropStage"></div>
+                                    <div id="cropError" class="alert alert-danger py-2 mb-0 mt-2 d-none"></div>
+                                    <div class="form-text mt-2">
+                                        Drag to set the crop area (kept at 4:3 for the report). Any rotation already applied is kept.
+                                    </div>
+                                </div>
+                                <div class="modal-footer py-1">
+                                    <button type="button" class="btn btn-sm btn-outline-danger" id="btnCropClear">Clear Crop</button>
+                                    <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                    <button type="button" class="btn btn-sm btn-success" id="btnCropApply">Apply Crop</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SUBMIT summary modal (demo: nothing is sent) -->
+                    <div class="modal fade" id="summaryModal" tabindex="-1" aria-labelledby="summaryModalLabel" aria-hidden="true">
+                        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+                            <div class="modal-content">
+                                <div class="modal-header py-2">
+                                    <h6 class="modal-title fs-13" id="summaryModalLabel">Demo submission summary</h6>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div id="summaryList" class="d-grid gap-2"></div>
+                                    <p class="fs-12 mt-3 mb-0" id="summaryCounts"></p>
+                                    <p class="fs-11 text-muted mt-2 mb-0">
+                                        Demo build. No data has been sent and nothing has been stored.
+                                    </p>
+                                </div>
+                                <div class="modal-footer py-1">
+                                    <button type="button" class="btn btn-sm btn-primary" data-bs-dismiss="modal">Close</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <script>
+                        (function () {
+                            'use strict';
+
+                            // Photo Edit demo, client-side only. No storage, no network:
+                            // every action mutates state.photos and re-renders the two
+                            // zones. A refresh restarts the demo.
+
+                            // Demo photos: Unsplash placeholders stand in for images
+                            // added via the separate upload page (006PhotoUploadOut.aspx).
+                            // Raw images, no fit or size params: portrait stays portrait
+                            // and users crop/rotate it themselves.
+                            const unsplashUrl = (photoId) =>
+                                `https://images.unsplash.com/photo-${photoId}?auto=format&q=80`;
+
+                            // Demo placeholders, 10 max, all in the Edit Zone.
+                            // The Photo Sheet starts empty until photos are approved.
+                            // UK-leaning property + property-maintenance subjects.
+                            const PLACEHOLDER_PHOTOS = [
+                                { zone: 'staging', name: 'london-terrace.jpg', photoId: '1650549442309-1696720ff7d7' },
+                                { zone: 'staging', name: 'broadstairs-houses.jpg', photoId: '1489257251256-036cd1ac7606' },
+                                { zone: 'staging', name: 'terraced-houses.jpg', photoId: '1758796626448-23a00514db66' },
+                                { zone: 'staging', name: 'housing-group.jpg', photoId: '1657991783650-ea7d453c119b' },
+                                { zone: 'staging', name: 'residential-street.jpg', photoId: '1700419595003-cf7449b63408' },
+                                { zone: 'staging', name: 'dirty-gutters.jpg', photoId: '1744044155829-610dded4cead' },
+                                { zone: 'staging', name: 'broken-gutter.jpg', photoId: '1642388514011-b4b4f43a2179' },
+                                { zone: 'staging', name: 'mossy-roof.jpg', photoId: '1678020706579-de8ce9e33ca8' },
+                                { zone: 'staging', name: 'new-roof-tiles.jpg', photoId: '1745478433374-8af6dc30a743' },
+                                { zone: 'staging', name: 'radiator.jpg', photoId: '1613063457061-eecde6f4b20d' }
+                            ];
+
+                            // Photo shape: { id, name, url, zone, rotation, crop, selected }
+                            //   zone:     'staging' (Edit Zone) or 'sheet' (Photo Sheet)
+                            //   rotation: 0, 90, 180 or 270 (degrees clockwise)
+                            //   crop:     { l, t, w, h } fractions of the original image, or null
+                            const state = {
+                                photos: [],
+                                nextId: 1
+                            };
+
+                            // The photo currently open in the crop modal.
+                            let cropTarget = null;
+                            let cropper = null;
+                            // Natural size + rotation of the image inside the crop modal.
+                            let cropContext = null;
+                            // Cropper can only measure the stage once the image has loaded
+                            // and the modal is fully shown. While hidden the stage is 0x0,
+                            // which leaves Cropper stuck at its 200x100 fallback size.
+                            let cropImage = null;
+                            let cropShown = false;
+
+                            // Small helpers
+                            const byId = (id) => document.getElementById(id);
+
+                            const escapeHtml = (text) => String(text)
+                                .replace(/&/g, '&amp;')
+                                .replace(/</g, '&lt;')
+                                .replace(/>/g, '&gt;')
+                                .replace(/"/g, '&quot;');
+
+                            const clamp01 = (value) => Math.min(1, Math.max(0, value));
+
+                            function photosIn(zone) {
+                                return state.photos.filter((photo) => photo.zone === zone);
+                            }
+
+                            function selectedIn(zone) {
+                                return photosIn(zone).filter((photo) => photo.selected);
+                            }
+
+                            function findPhoto(id) {
+                                return state.photos.find((photo) => photo.id === id);
+                            }
+
+                            // Demo seed: placeholders stand in for uploads
+
+                            function seedPhotos() {
+                                PLACEHOLDER_PHOTOS.forEach((seed) => {
+                                    state.photos.push({
+                                        id: state.nextId++,
+                                        name: seed.name,
+                                        url: unsplashUrl(seed.photoId),
+                                        zone: seed.zone,
+                                        rotation: seed.rotation || 0,
+                                        crop: seed.crop || null,
+                                        selected: false
+                                    });
+                                });
+                            }
+
+                            // Rendering: both zones are rebuilt from state
+
+                            function renderZones() {
+                                renderZone('staging');
+                                renderZone('sheet');
+                                updateToolbars();
+                            }
+
+                            function renderZone(zone) {
+                                const staging = zone === 'staging';
+                                const photos = photosIn(zone);
+
+                                byId(staging ? 'stagingGrid' : 'sheetGrid').innerHTML = photos.map(tileHtml).join('');
+                                byId(staging ? 'stagingEmpty' : 'sheetEmpty').classList.toggle('d-none', photos.length > 0);
+                                byId(staging ? 'stagingBadge' : 'sheetBadge').textContent =
+                                    `${photos.length} photo${photos.length === 1 ? '' : 's'}`;
+                            }
+
+                            // Background window for a crop, painted exact-size into a box of
+                            // matching shape. `box` holds crop fractions in the (possibly
+                            // rotated) space being displayed.
+                            function cropBackground(url, box) {
+                                const posX = box.w < 1 ? (box.l / (1 - box.w)) * 100 : 50;
+                                const posY = box.h < 1 ? (box.t / (1 - box.h)) * 100 : 50;
+                                return `background-image: url('${url}');` +
+                                    `background-size: ${100 / box.w}% ${100 / box.h}%;` +
+                                    `background-position: ${posX}% ${posY}%;`;
+                            }
+
+                            // Crop fractions in rotated-canvas space, via the same helper
+                            // the crop modal uses (unit dims keep everything fractional).
+                            function windowFractions(crop, rotation) {
+                                if (!rotation) return { l: crop.l, t: crop.t, w: crop.w, h: crop.h };
+                                const turned = rotateRect({ x: crop.l, y: crop.t, w: crop.w, h: crop.h }, rotation, 1, 1);
+                                return { l: turned.x, t: turned.y, w: turned.w, h: turned.h };
+                            }
+
+                            // Frame background for cropped photos. The frame itself never
+                            // rotates, so the whole picture always fits the 4:3 tile;
+                            // turned crops get their own 3:4 box (see tileInnerHtml).
+                            function frameStyle(photo) {
+                                if (!photo.crop || photo.rotation % 180 !== 0) return '';
+                                return cropBackground(photo.url, windowFractions(photo.crop, photo.rotation));
+                            }
+
+                            // Inner tile content. Rotation lives on the img when uncropped
+                            // (a turned img gets a narrower, taller box so the whole photo
+                            // stays visible), or on a centred 3:4 crop box when cropped
+                            // and turned. Nothing here is ever clipped.
+                            function tileInnerHtml(photo, alt) {
+                                const turned = photo.rotation % 180 !== 0;
+                                if (photo.crop && turned) {
+                                    const box = windowFractions(photo.crop, photo.rotation);
+                                    return `<span class="photo-cropview" style="${cropBackground(photo.url, box)}"></span>` +
+                                        `<img class="photo-img" src="${escapeHtml(photo.url)}" alt="" style="visibility: hidden;">`;
+                                }
+                                let imgStyle = photo.crop ? 'visibility: hidden;' : '';
+                                if (photo.rotation) imgStyle += `transform: rotate(${photo.rotation}deg);`;
+                                return `<img class="photo-img${turned ? ' is-turned' : ''}" src="${escapeHtml(photo.url)}" alt="${escapeHtml(alt)}" style="${imgStyle}">`;
+                            }
+
+                            function tileHtml(photo) {
+                                const tools = photo.zone === 'staging'
+                                    ? `<a href="#" data-act="rotate-left" title="Rotate left"><i class="bi bi-arrow-counterclockwise"></i></a>
+                                       <a href="#" data-act="rotate-right" title="Rotate right"><i class="bi bi-arrow-clockwise"></i></a>
+                                       <a href="#" data-act="crop" title="Crop photo"><i class="bi bi-crop"></i></a>`
+                                    : `<a href="#" data-act="return" title="Send back to the Edit Zone"><i class="bi bi-arrow-left"></i></a>`;
+
+                                const cropped = Boolean(photo.crop);
+                                return `
+                                    <div class="col photo-col" data-id="${photo.id}">
+                                        <div class="card h-100 photo-tile">
+                                            <div class="photo-media">
+                                                <span class="photo-view" title="Click to select">
+                                                    <span class="photo-frame" style="${frameStyle(photo)}">${tileInnerHtml(photo, photo.name)}</span>
+                                                </span>
+                                                <input type="checkbox" class="photo-select" ${photo.selected ? 'checked' : ''} title="Tick for a bulk action">
+                                                ${photo.rotation ? `<span class="badge bg-primary rot-badge">${photo.rotation}&deg;</span>` : ''}
+                                                ${cropped ? '<span class="badge bg-warning text-dark crop-badge">Crop</span>' : ''}
+                                            </div>
+                                            <div class="card-body p-1">
+                                                <div class="photo-tools">
+                                                    ${tools}
+                                                    <a href="#" data-act="delete" class="act-delete" title="Delete photo"><i class="bi bi-trash"></i></a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>`;
+                            }
+
+                            function updateToolbars() {
+                                const stagingCount = selectedIn('staging').length;
+                                byId('stagingSelected').textContent = `${stagingCount} selected`;
+                                byId('rotateLeft').classList.toggle('is-disabled', stagingCount === 0);
+                                byId('rotateRight').classList.toggle('is-disabled', stagingCount === 0);
+                                byId('btnApprove').disabled = stagingCount === 0;
+
+                                const sheetCount = selectedIn('sheet').length;
+                                byId('sheetSelected').textContent = `${sheetCount} selected`;
+                                byId('btnReturn').disabled = sheetCount === 0;
+                            }
+
+                            // Photo actions: rotate, approve, return, delete
+
+                            function rotatePhoto(photo, degrees) {
+                                photo.rotation = ((photo.rotation + degrees) % 360 + 360) % 360;
+                            }
+
+                            function movePhoto(photo, zone) {
+                                photo.zone = zone;
+                                photo.selected = false;
+                            }
+
+                            function approveSelected() {
+                                selectedIn('staging').forEach((photo) => movePhoto(photo, 'sheet'));
+                                renderZones();
+                            }
+
+                            function returnSelected() {
+                                selectedIn('sheet').forEach((photo) => movePhoto(photo, 'staging'));
+                                renderZones();
+                            }
+
+                            function deletePhoto(photo) {
+                                if (!confirm(`Remove "${photo.name}" from the demo?`)) return;
+                                state.photos = state.photos.filter((other) => other.id !== photo.id);
+                                renderZones();
+                            }
+
+                            function setSelection(zone, selected) {
+                                photosIn(zone).forEach((photo) => { photo.selected = selected; });
+                                renderZone(zone);
+                                updateToolbars();
+                            }
+
+                            // Grid events: one delegated handler per event type
+
+                            function handleGridAction(event) {
+                                const action = event.target.closest('[data-act]');
+                                if (!action) {
+                                    togglePhotoSelection(event);   // clicking the photo ticks/unticks it
+                                    return;
+                                }
+                                event.preventDefault();
+
+                                const tile = action.closest('.photo-col');
+                                const photo = tile ? findPhoto(Number(tile.dataset.id)) : null;
+                                if (!photo) return;
+
+                                switch (action.dataset.act) {
+                                    case 'rotate-left':
+                                        rotatePhoto(photo, -90);
+                                        renderZone(photo.zone);
+                                        break;
+                                    case 'rotate-right':
+                                        rotatePhoto(photo, 90);
+                                        renderZone(photo.zone);
+                                        break;
+                                    case 'crop':
+                                        openCropModal(photo);
+                                        break;
+                                    case 'return':
+                                        movePhoto(photo, 'staging');
+                                        renderZones();
+                                        break;
+                                    case 'delete':
+                                        deletePhoto(photo);
+                                        break;
+                                }
+                            }
+
+                            function handleGridChange(event) {
+                                if (!event.target.classList.contains('photo-select')) return;
+                                const tile = event.target.closest('.photo-col');
+                                const photo = tile ? findPhoto(Number(tile.dataset.id)) : null;
+                                if (!photo) return;
+                                photo.selected = event.target.checked;
+                                updateToolbars();
+                            }
+
+                            // Clicking the photo itself ticks/unticks it. The checkbox
+                            // sits outside the photo area, so the two never double-fire.
+                            function togglePhotoSelection(event) {
+                                const frame = event.target.closest('.photo-view');
+                                if (!frame) return;
+                                const tile = frame.closest('.photo-col');
+                                const photo = tile ? findPhoto(Number(tile.dataset.id)) : null;
+                                if (!photo) return;
+                                photo.selected = !photo.selected;
+                                renderZone(photo.zone);
+                                updateToolbars();
+                            }
+
+                            // Crop modal: the photo is drawn pre-rotated onto a canvas for Cropper.js
+
+                            // Rotates a rectangle (width × height space) clockwise by
+                            // `turns` degrees and returns it in the swapped space.
+                            function rotateRect(rect, turns, width, height) {
+                                let { x, y, w, h } = rect;
+                                let spaceWidth = width;
+                                let spaceHeight = height;
+                                const steps = (((turns % 360) + 360) % 360) / 90;
+
+                                for (let step = 0; step < steps; step++) {
+                                    ({ x, y, w, h } = {
+                                        x: spaceHeight - (y + h),
+                                        y: x,
+                                        w: h,
+                                        h: w
+                                    });
+                                    [spaceWidth, spaceHeight] = [spaceHeight, spaceWidth];
+                                }
+                                return { x, y, w, h };
+                            }
+
+                            function openCropModal(photo) {
+                                cropTarget = photo;
+                                byId('cropPhotoName').textContent = photo.name;
+                                hideCropError();
+                                destroyCropper();
+
+                                const image = new Image();
+                                // Load with CORS so the canvas stays clean. Cropper reads
+                                // it back with toDataURL(), which throws on a canvas
+                                // tainted by a cross-origin image.
+                                image.crossOrigin = 'anonymous';
+                                image.onload = () => {
+                                    if (photo !== cropTarget) return;   // superseded by another photo
+                                    cropImage = image;
+                                    tryBuildCropper();
+                                };
+                                image.onerror = () => showCropError('This photo could not be loaded for cropping.');
+                                image.src = photo.url;
+
+                                bootstrap.Modal.getOrCreateInstance(byId('cropModal')).show();
+                            }
+
+                            function tryBuildCropper() {
+                                if (!cropImage || !cropShown || !cropTarget || cropper) return;
+                                buildCropper(cropImage, cropTarget.rotation, cropTarget.crop);
+                            }
+
+                            function buildCropper(image, rotation, savedCrop) {
+                                const width = image.naturalWidth;
+                                const height = image.naturalHeight;
+                                const swapped = ((rotation % 180) + 180) % 180 !== 0;
+
+                                const canvas = document.createElement('canvas');
+                                canvas.id = 'cropCanvas';
+                                canvas.width = swapped ? height : width;
+                                canvas.height = swapped ? width : height;
+
+                                const context = canvas.getContext('2d');
+                                context.translate(canvas.width / 2, canvas.height / 2);
+                                context.rotate(rotation * Math.PI / 180);
+                                context.drawImage(image, -width / 2, -height / 2);
+                                byId('cropStage').appendChild(canvas);
+
+                                cropContext = {
+                                    width: width,
+                                    height: height,
+                                    rotation: rotation,
+                                    canvasWidth: canvas.width,
+                                    canvasHeight: canvas.height
+                                };
+
+                                try {
+                                    cropper = new Cropper(canvas, {
+                                        viewMode: 1,
+                                        // Locked to the 300x225 report shape used on prod.
+                                        aspectRatio: 4 / 3,
+                                        // No auto selection here, drag over the photo to choose
+                                        // the crop area. A saved crop is restored in ready().
+                                        autoCrop: Boolean(savedCrop),
+                                        movable: true,
+                                        zoomable: true,
+                                        scalable: false,
+                                        rotatable: false,
+                                        ready() {
+                                            if (!savedCrop) return;
+                                            const restored = rotateRect({
+                                                x: savedCrop.l * width,
+                                                y: savedCrop.t * height,
+                                                w: savedCrop.w * width,
+                                                h: savedCrop.h * height
+                                            }, rotation, width, height);
+                                            // Cropper's API reads width/height, while
+                                            // rotateRect and our store use w/h.
+                                            cropper.setData({
+                                                x: restored.x,
+                                                y: restored.y,
+                                                width: restored.w,
+                                                height: restored.h
+                                            });
+                                        }
+                                    });
+                                } catch (error) {
+                                    cropper = null;
+                                    showCropError('The crop tool could not be initialised for this photo.');
+                                }
+                            }
+
+                            function applyCrop() {
+                                if (!cropper || !cropTarget || !cropContext) return;
+
+                                const selection = cropper.getData();
+                                if (selection.width < 2 || selection.height < 2) {
+                                    showCropError(selection.width
+                                        ? 'The crop area is too small.'
+                                        : 'Drag over the photo to select the crop area.');
+                                    return;
+                                }
+
+                                // Selection is in rotated-canvas space; rotate it back to
+                                // the original image space before storing it. Cropper's
+                                // API reports width/height; rotateRect and our store use w/h.
+                                const original = rotateRect(
+                                    {
+                                        x: selection.x,
+                                        y: selection.y,
+                                        w: selection.width,
+                                        h: selection.height
+                                    },
+                                    -cropContext.rotation,
+                                    cropContext.canvasWidth,
+                                    cropContext.canvasHeight
+                                );
+                                const crop = {
+                                    l: clamp01(original.x / cropContext.width),
+                                    t: clamp01(original.y / cropContext.height),
+                                    w: clamp01(original.w / cropContext.width),
+                                    h: clamp01(original.h / cropContext.height)
+                                };
+                                crop.w = Math.min(crop.w, 1 - crop.l);
+                                crop.h = Math.min(crop.h, 1 - crop.t);
+
+                                cropTarget.crop = crop;
+                                renderZone(cropTarget.zone);
+                                hideCropModal();
+                            }
+
+                            function clearCrop() {
+                                if (cropTarget) {
+                                    cropTarget.crop = null;
+                                    renderZone(cropTarget.zone);
+                                }
+                                hideCropModal();
+                            }
+
+                            function hideCropModal() {
+                                bootstrap.Modal.getOrCreateInstance(byId('cropModal')).hide();
+                            }
+
+                            function destroyCropper() {
+                                if (cropper) {
+                                    cropper.destroy();
+                                    cropper = null;
+                                }
+                                cropContext = null;
+                                cropImage = null;
+                                cropShown = false;
+                                byId('cropStage').innerHTML = '';
+                            }
+
+                            function showCropError(message) {
+                                const error = byId('cropError');
+                                error.textContent = message;
+                                error.classList.remove('d-none');
+                            }
+
+                            function hideCropError() {
+                                byId('cropError').classList.add('d-none');
+                            }
+
+                            // SUBMIT summary: demo only, no request is made
+
+                            function summaryRowHtml(photo) {
+                                const cropText = photo.crop
+                                    ? [photo.crop.l, photo.crop.t, photo.crop.w, photo.crop.h]
+                                        .map((value) => `${Math.round(value * 100)}%`).join(', ')
+                                    : 'full photo';
+                                const zoneLabel = photo.zone === 'staging' ? 'Edit Zone' : 'Photo Sheet';
+
+                                return `
+                                    <div class="d-flex gap-2 border rounded p-2 align-items-center">
+                                        <span class="summary-view"><span class="summary-frame photo-frame" style="${frameStyle(photo)}">${tileInnerHtml(photo, '')}</span></span>
+                                        <div class="fs-12">
+                                            <strong>${escapeHtml(photo.name)}</strong>
+                                            <div class="text-muted">
+                                                ${zoneLabel} &middot; Rotation: ${photo.rotation}&deg; &middot; Crop: ${cropText}
+                                            </div>
+                                        </div>
+                                    </div>`;
+                            }
+
+                            function showSummary() {
+                                const edited = state.photos.filter((photo) => photo.rotation || photo.crop);
+                                byId('summaryList').innerHTML = edited.length
+                                    ? edited.map(summaryRowHtml).join('')
+                                    : '<p class="mb-0">No rotation or crop changes were made.</p>';
+
+                                const stagingCount = photosIn('staging').length;
+                                const sheetCount = photosIn('sheet').length;
+                                byId('summaryCounts').textContent =
+                                    `${stagingCount} photo(s) still in the Edit Zone, ${sheetCount} approved on the Photo Sheet.`;
+
+                                bootstrap.Modal.getOrCreateInstance(byId('summaryModal')).show();
+                            }
+
+                            // Wiring and init
+
+                            // Links used as actions never navigate.
+                            function bindLink(id, handler) {
+                                byId(id).addEventListener('click', (event) => {
+                                    event.preventDefault();
+                                    handler();
+                                });
+                            }
+
+                            function bindEvents() {
+                                // Edit Zone toolbar
+                                bindLink('selectAllStaging', () => setSelection('staging', true));
+                                bindLink('deselectAllStaging', () => setSelection('staging', false));
+                                bindLink('rotateLeft', () => {
+                                    selectedIn('staging').forEach((photo) => rotatePhoto(photo, -90));
+                                    renderZone('staging');
+                                });
+                                bindLink('rotateRight', () => {
+                                    selectedIn('staging').forEach((photo) => rotatePhoto(photo, 90));
+                                    renderZone('staging');
+                                });
+                                byId('btnApprove').addEventListener('click', approveSelected);
+
+                                // Photo Sheet toolbar
+                                bindLink('selectAllSheet', () => setSelection('sheet', true));
+                                bindLink('deselectSheet', () => setSelection('sheet', false));
+                                byId('btnReturn').addEventListener('click', returnSelected);
+
+                                // Tiles (delegated, grids are rebuilt on every render)
+                                byId('stagingGrid').addEventListener('click', handleGridAction);
+                                byId('sheetGrid').addEventListener('click', handleGridAction);
+                                byId('stagingGrid').addEventListener('change', handleGridChange);
+                                byId('sheetGrid').addEventListener('change', handleGridChange);
+
+                                // Crop modal
+                                byId('btnCropApply').addEventListener('click', applyCrop);
+                                byId('btnCropClear').addEventListener('click', clearCrop);
+                                byId('cropModal').addEventListener('shown.bs.modal', () => {
+                                    cropShown = true;
+                                    tryBuildCropper();
+                                });
+                                byId('cropModal').addEventListener('hidden.bs.modal', destroyCropper);
+
+                                // SUBMIT is intercepted: this is a demo, nothing is sent.
+                                const form = document.querySelector('form[name="vJobDetails"]');
+                                byId('btnSubmitPhotos').addEventListener('click', (event) => {
+                                    event.preventDefault();
+                                    showSummary();
+                                });
+                                form.addEventListener('submit', (event) => {
+                                    event.preventDefault();
+                                    showSummary();
+                                });
+                            }
+
+                            seedPhotos();
+                            bindEvents();
+                            renderZones();
+                        })();
+                    </script>
+                </form>
+
+            </div>
+
+
+        </div>
+
+        <script src="assets/js/bootstrap.bundle.min.js"></script>
+
+</body>
+
+</html>

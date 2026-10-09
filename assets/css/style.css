@@ -1,0 +1,384 @@
+ /*
+    Custom CSS Stylesheet
+    Last Updated: 10/02/2026
+ */
+
+ @import url('../css/bootstrap-icons-1.13.1/bootstrap-icons.min.css');
+
+ :root {
+     --amg-primary: #0E2E47;
+     --amg-primary-lighter: rgba(53, 95, 145, 0.766);
+     --amg-secondary: #337ab7;
+     --amg-danger: #882121;
+     --amg-warning: #e4954a;
+     --amg-success: #198754;
+     --bs-tertiary-bg: rgba(219, 219, 219, 0.54);
+     --bs-body-font-size: 12px;
+     --input-font-size: 12px;
+ }
+
+ body {
+     font-family: Arial, Helvetica, sans-serif;
+     background-color: whitesmoke;
+ }
+
+ .table-hover>tbody>tr:hover>* {
+     background-color: #3379b73a;
+ }
+
+ .table-head-primary {
+     --bs-table-bg: var(--amg-primary);
+     --bs-table-color: white;
+ }
+
+ td,
+ th {
+     vertical-align: middle;
+ }
+
+ a:not(.btn) {
+     color: var(--amg-primary);
+     text-decoration: underline;
+     font-weight: bold;
+ }
+
+ a:hover {
+     color: var(--amg-secondary);
+     text-decoration: none;
+ }
+
+ #navlinks {
+     margin: 1rem;
+     display: flex;
+     justify-content: center;
+     align-items: center;
+ }
+
+ #navlinks>a:not(.btn) {
+     padding-right: 1rem;
+     padding-left: 1rem;
+     border-right: 1px solid #dee2e6;
+     border-left: 1px solid #dee2e6;
+ }
+
+ .banner {
+     position: relative;
+     background-color: var(--amg-primary);
+     color: white;
+     height: 85px;
+     display: flex;
+     align-items: center;
+     padding-right: 50px;
+     border-bottom: var(--amg-secondary) 4px solid;
+     font-size: 14px;
+ }
+
+ #banner_logo {
+     width: 100px;
+     height: auto;
+     color: white;
+ }
+
+ #banner_caseref_address {
+     position: absolute;
+     margin-bottom: 0.5rem;
+     text-align: center;
+     left: 0;
+     right: 0;
+     bottom: 0;
+ }
+
+ #banner_assetmanagementgroup {
+     margin-left: auto;
+ }
+
+ .input-group-text {
+     font-size: 8pt;
+ }
+
+ .form-control-sm {
+     font-size: var(--input-font-size);
+ }
+
+ /* Turns the select box red if the chosen option has the class .text-danger OR inline #FF0000 */
+ .form-select:has(option.text-danger:checked, option[style*="FF0000" i]:checked) {
+     color: #dc3545 !important;
+     font-weight: bold !important;
+ }
+
+ .btn {
+     --bs-btn-font-size: 10pt;
+     display: inline-flex;
+     align-items: center;
+     justify-content: center;
+     transition: transform 0.3s ease, box-shadow 0.3s ease;
+ }
+
+ .btn:hover {
+     transform: translateY(-1px);
+     box-shadow: 0 8px 10px rgba(0, 0, 0, 0.10);
+ }
+
+ .btn:active {
+     transform: translateY(-1px);
+     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+ }
+
+ .btn-xs {
+     --bs-btn-font-size: 11px;
+     --bs-btn-padding-y: 0.2rem;
+     --bs-btn-padding-x: 0.75rem;
+ }
+
+ .btn-sm {
+     --bs-btn-font-size: 10pt;
+ }
+
+ .btn-lg {
+     --bs-btn-font-size: 14pt;
+ }
+
+ .btn-primary {
+     background-color: var(--amg-primary);
+     border: var(--amg-primary);
+     color: white;
+ }
+
+ .btn-primary:hover {
+     background-color: var(--amg-primary);
+     border: var(--amg-primary);
+     color: white;
+ }
+
+ .btn-primary:active {
+     background-color: var(--amg-primary);
+     border: var(--amg-primary);
+     color: white;
+ }
+
+ .btn-warning {
+     background-color: var(--amg-warning);
+     border: var(--amg-warning);
+     color: white;
+ }
+
+ .btn-warning:hover,
+ .btn-warning:active,
+ .btn-warning:first-child:active,
+ :not(.btn-check)+.btn-warning:active {
+     background-color: var(--amg-warning);
+     border-color: var(--amg-warning);
+     color: white;
+ }
+
+ .btn-outline-primary {
+     color: var(--amg-secondary);
+     border-color: var(--amg-secondary);
+ }
+
+ .btn-outline-primary:hover {
+     background-color: var(--amg-secondary);
+     color: white;
+     border-color: var(--amg-primary);
+ }
+
+ .btn-primary:first-child:active,
+ .btn-primary:first-child.active {
+     --bs-btn-active-bg: var(--amg-primary);
+     background-color: var(--amg-primary) !important;
+ }
+
+ .btn.back-icon {
+     background-color: var(--amg-primary);
+ }
+
+ /*
+ .btn.add-icon {
+     background-color: var(--amg-success);
+ }
+ */
+
+ .btn-secondary {
+     background-color: var(--amg-secondary);
+     border: var(--amg-secondary);
+     color: white;
+ }
+
+ .btn-secondary:hover {
+     background-color: #2e6fa9;
+     border: var(--amg-secondary);
+     color: white;
+ }
+
+ .btn-danger {
+     background-color: var(--amg-danger);
+     border: var(--amg-danger);
+     color: white;
+ }
+
+ .btn-danger:hover {
+     background-color: red;
+     border: var(--amg-primary);
+ }
+
+ .btn-success {
+     background-color: var(--amg-success);
+     border: var(--amg-success);
+     color: white;
+ }
+
+ .card-header {
+     background-color: var(--amg-primary) !important;
+     color: white !important;
+     border-bottom: var(--amg-secondary) 4px solid;
+     font-size: 14px;
+ }
+
+ .shadow {
+     box-shadow: 0 0 3px #333 !important;
+ }
+
+ .fs-8 {
+     font-size: 8px;
+ }
+
+ .fs-10 {
+     font-size: 10px;
+ }
+
+ .fs-11 {
+     font-size: 11px;
+ }
+
+ .fs-12 {
+     font-size: 12px;
+ }
+
+ .fs-13 {
+     font-size: 13px;
+ }
+
+ .w-10 {
+     width: 10% !important;
+ }
+
+ .w-15 {
+     width: 15% !important;
+ }
+
+ .w-20 {
+     width: 20% !important;
+ }
+
+ .form-select-sm {
+     font-size: var(--input-font-size);
+ }
+
+ .input-group-sm>.btn,
+ .input-group-sm>.form-control,
+ .input-group-sm>.form-select,
+ .input-group-sm>.input-group-text {
+     font-size: var(--input-font-size);
+ }
+
+ .bg-primary {
+     background-color: var(--amg-primary) !important;
+     color: white !important;
+ }
+
+ .section-banner {
+     background-color: var(--amg-primary);
+     /* Change to your desired banner color */
+     color: white;
+     display: grid;
+     align-items: center;
+     padding-left: 7px;
+     margin-bottom: 5px;
+     border-bottom: var(--amg-secondary) 2px solid;
+ }
+
+ .submit-icon::after {
+     content: "\F134";
+     font-family: "bootstrap-icons";
+     display: inline-block;
+     line-height: 1;
+     vertical-align: -.125em;
+     font-variant: normal;
+     font-style: normal;
+     margin-left: 0.5em;
+ }
+
+ .update-icon::after {
+     content: "\F1BE";
+     font-family: "bootstrap-icons";
+     display: inline-block;
+     line-height: 1;
+     vertical-align: -.125em;
+     font-variant: normal;
+     font-style: normal;
+     margin-left: 0.5em;
+ }
+
+ .add-icon::after {
+     content: "\F4FA";
+     font-family: "bootstrap-icons";
+     display: inline-block;
+     line-height: 1;
+     vertical-align: -.125em;
+     font-variant: normal;
+     font-style: normal;
+     margin-left: 0.5em;
+ }
+
+ .back-icon::before {
+     content: "\F12A";
+     font-family: "bootstrap-icons";
+     display: inline-block;
+     line-height: 1;
+     vertical-align: -.125em;
+     font-variant: normal;
+     font-style: normal;
+     margin-right: 0.5em;
+ }
+
+ .edit-icon::before {
+     content: "\F4CB";
+     font-family: "bootstrap-icons";
+     display: inline-block;
+     line-height: 1;
+     vertical-align: -.125em;
+     font-variant: normal;
+     font-style: normal;
+     margin-right: 0.5em;
+ }
+
+ .delete-icon::before {
+     content: "\F78B";
+     font-family: "bootstrap-icons";
+     display: inline-block;
+     line-height: 1;
+     vertical-align: -.125em;
+     font-variant: normal;
+     font-style: normal;
+     margin-right: 0.5em;
+ }
+
+ .search-icon::after {
+     content: "\F52A";
+     font-family: "bootstrap-icons";
+     display: inline-block;
+     line-height: 1;
+     vertical-align: -.125em;
+     font-variant: normal;
+     font-style: normal;
+     margin-left: 0.5em;
+ }
+
+ /* CSS Class to wrap input group and prevent breaking on small screens */
+ .input-group-text-wrap {
+     max-width: 100%;
+     /* Prevents breaking on small mobile screens */
+     white-space: normal;
+     /* Allows text to wrap downwards instead of stretching sideways */
+     text-align: left;
+ }
