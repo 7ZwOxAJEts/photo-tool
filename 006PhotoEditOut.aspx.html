@@ -1261,8 +1261,22 @@
                                                title="Rotate all ticked photos right" aria-label="Rotate right">
                                                 <i class="bi bi-arrow-clockwise"></i>
                                             </a>
+                                            <span class="vr d-none d-sm-inline-block"></span>
+                                            <button type="button" class="btn btn-sm btn-danger" id="deleteSelected"
+                                                    title="Delete all ticked photos">
+                                                Delete selected <i class="bi bi-trash ms-2"></i>
+                                            </button>
                                             <button type="button" class="btn btn-sm btn-success ms-auto" id="btnApprove"
-                                                    disabled title="Move ticked photos to the Photo Sheet">Approve selected &rarr;</button>
+                                                    disabled title="Move ticked photos to the Photo Sheet">Approve Selected &rarr;</button>
+                                            <!-- Inline confirm for the bulk delete, shown inside the bar -->
+                                            <div class="d-none w-100 align-items-center gap-2 flex-wrap border-top mt-2 pt-2"
+                                                 id="deleteConfirm">
+                                                <span class="fs-12 text-danger">Are you sure you want to delete the selected entries?</span>
+                                                <div class="ms-auto d-flex gap-2">
+                                                    <button type="button" class="btn btn-sm btn-danger" id="btnDeleteConfirm">Delete</button>
+                                                    <button type="button" class="btn btn-sm btn-secondary" id="btnDeleteCancel">Cancel</button>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
 
@@ -1296,7 +1310,7 @@
                                     <div class="row row-cols-3 row-cols-sm-4 row-cols-md-5 row-cols-lg-6 g-2" id="sheetGrid"></div>
                                     <p class="text-muted fs-12 mb-0" id="sheetEmpty">
                                         Nothing approved yet. Tick photos in the Edit Zone and choose
-                                        <strong>Approve selected</strong>.
+                                        <strong>Approve Selected</strong>.
                                     </p>
 
                                     <!-- Submit sits in the sheet, bottom right, same size as Return -->
@@ -1370,10 +1384,11 @@
 
                             // Demo photos: Unsplash placeholders stand in for images
                             // added via the separate upload page (006PhotoUploadOut.aspx).
-                            // Raw images, no fit or size params: portrait stays portrait
-                            // and users crop/rotate it themselves.
+                            // Width only, no fit or height: portrait keeps its shape
+                            // (users crop/rotate it themselves) but files stay small
+                            // enough to load quickly.
                             const unsplashUrl = (photoId) =>
-                                `https://images.unsplash.com/photo-${photoId}?auto=format&q=80`;
+                                `https://images.unsplash.com/photo-${photoId}?auto=format&w=800&q=70`;
 
                             // Demo placeholders, 10 max, all in the Edit Zone.
                             // The Photo Sheet starts empty until photos are approved.
@@ -1545,7 +1560,11 @@
                                 byId('stagingSelected').textContent = `${stagingCount} selected`;
                                 byId('rotateLeft').classList.toggle('is-disabled', stagingCount === 0);
                                 byId('rotateRight').classList.toggle('is-disabled', stagingCount === 0);
+                                byId('deleteSelected').disabled = stagingCount === 0;
                                 byId('btnApprove').disabled = stagingCount === 0;
+
+                                // Nothing left to delete, so the confirm goes with it
+                                if (stagingCount === 0) hideDeleteConfirm();
 
                                 const sheetCount = selectedIn('sheet').length;
                                 byId('sheetSelected').textContent = `${sheetCount} selected`;
@@ -1576,6 +1595,23 @@
                             function deletePhoto(photo) {
                                 if (!confirm(`Remove "${photo.name}" from the demo?`)) return;
                                 state.photos = state.photos.filter((other) => other.id !== photo.id);
+                                renderZones();
+                            }
+
+                            // Bulk delete: an inline confirm inside the toolbar bar
+                            function showDeleteConfirm() {
+                                if (!selectedIn('staging').length) return;
+                                byId('deleteConfirm').classList.replace('d-none', 'd-flex');
+                            }
+
+                            function hideDeleteConfirm() {
+                                byId('deleteConfirm').classList.replace('d-flex', 'd-none');
+                            }
+
+                            function deleteSelected() {
+                                const chosen = selectedIn('staging');
+                                state.photos = state.photos.filter((photo) => !chosen.includes(photo));
+                                hideDeleteConfirm();
                                 renderZones();
                             }
 
@@ -1881,6 +1917,17 @@
                                     selectedIn('staging').forEach((photo) => rotatePhoto(photo, 90));
                                     renderZone('staging');
                                 });
+                                byId('deleteSelected').addEventListener('click', showDeleteConfirm);
+                                byId('btnDeleteConfirm').addEventListener('click', deleteSelected);
+                                byId('btnDeleteCancel').addEventListener('click', hideDeleteConfirm);
+
+                                // Escape dismisses the inline delete confirm
+                                document.addEventListener('keydown', (event) => {
+                                    if (event.key !== 'Escape') return;
+                                    const strip = byId('deleteConfirm');
+                                    if (strip.classList.contains('d-flex')) hideDeleteConfirm();
+                                });
+
                                 byId('btnApprove').addEventListener('click', approveSelected);
 
                                 // Photo Sheet toolbar
